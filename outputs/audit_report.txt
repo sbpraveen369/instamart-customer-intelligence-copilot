@@ -1,0 +1,132 @@
+============================================================
+INSTAMART — RAW DATA AUDIT REPORT
+============================================================
+
+============================================================
+CUSTOMERS AUDIT
+============================================================
+Shape   : (1200, 5)
+Dtypes  :
+customer_id        str
+city               str
+gender             str
+age            float64
+signup_date        str
+
+--- Missing values: customers ---
+  customer_id                   :     0  (0.00%)
+  city                          :     0  (0.00%)
+  gender                        :    11  (0.92%)
+  age                           :     6  (0.50%)
+  signup_date                   :     0  (0.00%)
+
+Raw city value counts:
+  ' Pune'             : 227
+  'Delhi'             : 210
+  ' Bengaluru'        : 197
+  'Hyderabad'         : 191
+  'Chennai'           : 191
+  'Mumbai'            : 184
+
+Raw gender value counts:
+  'F'                 : 133
+  'M'                 : 126
+  'FEMALE'            : 124
+  'Female'            : 122
+  'f'                 : 122
+  'm'                 : 121
+  'female'            : 109
+  'MALE'              : 109
+  'male'              : 104
+  'Male'              : 100
+  nan                 : 11
+  'other'             : 10
+  'Other'             : 9
+
+Blank ages         : 0
+Invalid ages (<10 or >100): 28
+NaN ages (blank+invalid)  : 6
+
+============================================================
+PRODUCTS AUDIT
+============================================================
+Shape   : (40, 4)
+Dtypes  :
+product_id          str
+product_name        str
+category            str
+price_inr       float64
+
+--- Missing values: products ---
+  product_id                    :     0  (0.00%)
+  product_name                  :     0  (0.00%)
+  category                      :     0  (0.00%)
+  price_inr                     :     0  (0.00%)
+
+Invalid price_inr  : 0
+Negative price_inr : 0
+
+============================================================
+ORDERS AUDIT
+============================================================
+Shape   : (13084, 11)
+Dtypes  :
+order_id                str
+customer_id             str
+product_id              str
+category                str
+quantity              int64
+price_inr           float64
+discount_pct        float64
+order_amount        float64
+status                  str
+order_ts                str
+delivery_minutes    float64
+
+--- Missing values: orders ---
+  order_id                      :     0  (0.00%)
+  customer_id                   :     0  (0.00%)
+  product_id                    :     0  (0.00%)
+  category                      :     0  (0.00%)
+  quantity                      :     0  (0.00%)
+  price_inr                     :     0  (0.00%)
+  discount_pct                  :     0  (0.00%)
+  order_amount                  :   221  (1.69%)
+  status                        :     0  (0.00%)
+  order_ts                      :     0  (0.00%)
+  delivery_minutes              :  1629  (12.45%)
+
+Exact duplicate rows      : 541
+
+Status counts (raw):
+  completed      : 11584
+  cancelled      : 1256
+  pending        : 244
+
+Pending order rows        : 244
+Distinct order IDs        : 12309
+Missing order_amount      : 221
+Negative delivery_minutes : 182
+Blank delivery_minutes    : 0
+
+============================================================
+TICKETS AUDIT
+============================================================
+Shape   : (164, 5)
+Dtypes  :
+ticket_id      str
+customer_id    str
+issue_type     str
+status         str
+created_at     str
+
+--- Missing values: tickets ---
+  ticket_id                     :     0  (0.00%)
+  customer_id                   :     0  (0.00%)
+  issue_type                    :     0  (0.00%)
+  status                        :     0  (0.00%)
+  created_at                    :     0  (0.00%)
+
+============================================================
+END OF AUDIT REPORT
+============================================================
