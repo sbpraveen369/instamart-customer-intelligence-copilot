@@ -2,55 +2,57 @@
 INSTAMART PART A — EXPLORATORY DATA ANALYSIS (EDA) & STATISTICAL REPORT
 ================================================================================
 
-1. SUMMARY METRICS (COMPLETED ORDERS):
+1. PIVOT TABLE: CITY VS CATEGORY COMPLETED REVENUE (INR) WITH MARGINS:
+category           Dairy  Electronics    Grocery  Personal Care     Snacks  Total Revenue
+city                                                                                     
+Bengaluru       87075.05    233909.45  110915.65       20193.85   71549.40      523643.40
+Chennai         78301.80    195508.80   93817.45       27675.40   68325.70      463629.15
+Delhi          117271.70    158549.10  112658.05       23471.50   90879.45      502829.80
+Hyderabad       83731.00    228913.10  109475.40       24800.05   81670.35      528589.90
+Mumbai          75209.85    214738.40   78970.15       38018.00   72122.10      479058.50
+Pune            90349.55    187629.25  108456.60       34275.15   80207.50      500918.05
+Total Revenue  531938.95   1219248.10  614293.30      168433.95  464754.50     2998668.80
+
+Pivot Table Grand Total : INR 2,998,668.80
+Matches SQL Reference Total : INR 2,998,668.80 (EXACT MATCH)
+
+2. GROUPBY NAMED AGGREGATIONS BY CITY (COMPLETED ORDERS):
+                 sum    mean  count
+city                               
+Bengaluru  523643.40  276.47   1894
+Chennai    463629.15  272.72   1700
+Delhi      502829.80  243.62   2064
+Hyderabad  528589.90  284.95   1855
+Mumbai     479058.50  297.00   1613
+Pune       500918.05  252.48   1984
+
+3. STATISTICAL DISTRIBUTION & DISPERSION (COMPLETED ORDER AMOUNT):
   Total completed orders : 11,110
-  Total completed revenue: INR 2,998,668.80
   Mean order amount      : INR 269.91
-  Median order amount    : INR 229.16
-  Skewness               : 0.9322 (Positive right-skew)
+  Median order amount    : INR 135.00
+  Skewness               : 4.61 (strongly right-skewed)
+  Q1 (25th percentile)   : INR 64.80
+  Q3 (75th percentile)   : INR 297.00
+  IQR (Q3 - Q1)          : INR 232.20
+  Lower Fence (Q1 - 1.5*IQR): INR -283.50
+  Upper Fence (Q3 + 1.5*IQR): INR 645.30
+  Outliers above Upper Fence : 897 orders
+  Outliers below Lower Fence : 0 orders
 
-2. DISPERSION & OUTLIER DETECTION (IQR METHOD):
-  Q1 (25th percentile)   : INR 127.62
-  Q3 (75th percentile)   : INR 374.18
-  IQR (Q3 - Q1)          : INR 246.56
-  Lower Fence (Q1 - 1.5*IQR): INR -242.22
-  Upper Fence (Q3 + 1.5*IQR): INR 744.02
-  Outlier Count          : 165 orders (1.49%)
+4. CORRELATION MATRIX (COMPLETED ORDERS):
+                  order_amount  discount_pct  quantity  delivery_minutes
+order_amount            1.0000       -0.0951    0.0873           -0.0031
+discount_pct           -0.0951        1.0000   -0.0004           -0.0098
+quantity                0.0873       -0.0004    1.0000           -0.0126
+delivery_minutes       -0.0031       -0.0098   -0.0126            1.0000
 
-3. PIVOT TABLE: CITY VS CATEGORY COMPLETED REVENUE (INR) WITH MARGINS:
-category            Baby  Beverages      Dairy     Frozen  Groceries     Health  Household  Personal Care  Pet Supplies     Snacks  Total Revenue
-city                                                                                                                                             
-Bengaluru       39081.17   44482.24   54858.69   46442.58   49612.84   43792.74   44994.88       62044.78      65405.12   41841.87      492556.91
-Chennai         36235.02   36210.41   54528.54   42505.91   49926.32   38419.75   45709.11       68325.69      63092.59   45653.25      480606.59
-Delhi           43323.46   50685.39   61277.77   48860.02   63813.28   36523.49   56257.59       65351.07      69099.62   47499.44      542691.13
-Hyderabad       41065.82   40727.87   52874.65   51909.60   41599.14   33714.90   53117.47       47984.01      66461.99   39983.33      469438.78
-Mumbai          39746.72   45264.91   38516.98   45401.33   46337.23   35710.89   53554.63       57272.61      59224.72   38466.46      459496.48
-Pune            45338.94   35461.72   67555.16   55065.19   55905.91   40228.88   60108.25       82914.73      62011.48   49288.65      553878.91
-Total Revenue  244791.13  252832.54  329611.79  290184.63  307194.72  228390.65  313741.93      383892.89     385295.52  262733.00     2998668.80
+Largest correlation in absolute value: order_amount with discount_pct (r = -0.095)
+Second largest pair: order_amount with quantity (r = 0.087)
 
-4. GROUPBY NAMED AGGREGATIONS BY CITY:
-           total_orders  total_revenue_inr  mean_order_amount  median_order_amount  avg_delivery_minutes  active_customers
-city                                                                                                                      
-Bengaluru          1849          492556.91             266.39               225.98                 50.34               197
-Chennai            1755          480606.59             273.85               233.35                 50.23               191
-Delhi              2029          542691.13             267.47               227.80                 50.08               210
-Hyderabad          1724          469438.78             272.30               228.93                 50.27               191
-Mumbai             1705          459496.48             269.50               231.61                 49.56               184
-Pune               2048          553878.91             270.45               228.78                 50.18               227
+5. BUSINESS SYNTHESIS (FOUR CORE QUESTIONS):
+1. What is this data about? It captures 183 days of quick-commerce transactions across six Indian metros, covering daily essentials, groceries, personal care, and high-value electronics.
+2. What do distributions look like? Order value is heavily right-skewed (skewness 4.61), where the mean (INR 269.91) is double the median (INR 135.00), driven by routine low-ticket staples alongside occasional premium electronics.
+3. Are there outliers or anomalies? With Q1 at INR 64.80, Q3 at INR 297.00, and an upper fence of INR 645.30, there are exactly 897 upper outliers (multi-item orders and electronics like earbuds/power banks) and zero lower outliers. Planted negative delivery minutes were successfully sanitized.
+4. What relationships exist? The strongest correlation with order_amount is discount_pct at about -0.095, followed by quantity at +0.087. Crucially, a correlation of this modest magnitude does not establish causation: discounts reflect promotional mechanics rather than customer willingness-to-pay, requiring holistic retention modeling.
 
-5. CORRELATION MATRIX (COMPLETED ORDERS):
-                  quantity  price_inr  discount_pct  order_amount  delivery_minutes     age
-quantity            1.0000    -0.0182        0.0051        0.7013           -0.0178  0.0005
-price_inr          -0.0182     1.0000       -0.0045        0.6103            0.0100  0.0102
-discount_pct        0.0051    -0.0045        1.0000       -0.1552            0.0029  0.0067
-order_amount        0.7013     0.6103       -0.1552        1.0000           -0.0073  0.0042
-delivery_minutes   -0.0178     0.0100        0.0029       -0.0073            1.0000  0.0119
-age                 0.0005     0.0102        0.0067        0.0042            0.0119  1.0000
-
-6. BUSINESS SYNTHESIS (FOUR CORE QUESTIONS):
-1. Delivery SLA & Reliability: Median delivery across completed orders is stable (~50 min), with zero negative anomalies and category-median imputation ensuring reliable dark-store logistics.
-2. Category Contribution: Pet Supplies and Personal Care yield top revenues (INR 385.3k and 383.9k), driven by higher unit prices, whereas Groceries and Dairy drive frequent transaction volume.
-3. Basket Disparity & Outliers: The mean basket (INR 269.91) exceeds median (INR 229.16) with positive skewness (0.932) and 165 upper-fence outliers (> INR 744.02), reflecting premium bulk purchases.
-4. Promotion Dynamics: Discount percentage displays a slight negative correlation with order amount (r = -0.155) and near-zero correlation with quantity (r = 0.005). Crucially, correlation does not establish causation: promotional discounts alone do not cause organic volume growth, requiring targeted retention rather than blanket discounting.
-
-[Business Synthesis Word Count: 134 words (limit: 200 words)]
+[Business Synthesis Word Count: 153 words (strict limit: <= 200 words)]

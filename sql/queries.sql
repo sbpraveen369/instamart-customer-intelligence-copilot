@@ -5,44 +5,44 @@
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- Q1: WHERE and HAVING
--- High-volume categories with completed orders exceeding 1,000 orders
+-- Q1: WHERE then HAVING
+-- Keep only completed orders with order_amount > 500 (WHERE), group by customer,
+-- and keep customers whose total of those orders exceeds 8000 (HAVING).
+-- Reference: 30 customers.
 -- ------------------------------------------------------------------------------
 -- name: q1_where_and_having
 SELECT 
-    category,
-    COUNT(order_id) AS completed_orders,
-    ROUND(SUM(order_amount), 2) AS total_revenue_inr,
-    ROUND(AVG(order_amount), 2) AS avg_order_value_inr
+    customer_id,
+    ROUND(SUM(order_amount), 2) AS total_amount
 FROM orders
-WHERE status = 'completed'
-GROUP BY category
-HAVING COUNT(order_id) > 1000
-ORDER BY total_revenue_inr DESC;
+WHERE status = 'completed' AND order_amount > 500
+GROUP BY customer_id
+HAVING SUM(order_amount) > 8000
+ORDER BY total_amount DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q2: Three-table JOIN for city and product-category revenue
--- Combines customers, orders, and products to evaluate cross-segment revenue
+-- Q2: Three-Table JOIN
+-- Revenue by city and product category (join orders, customers, products).
+-- Reference: 30 rows; revenues sum to INR 2,998,668.80; largest cell is Bengaluru / Electronics at INR 233,909.45.
 -- ------------------------------------------------------------------------------
 -- name: q2_three_table_join
 SELECT 
     c.city,
     p.category,
-    COUNT(o.order_id) AS total_orders,
-    ROUND(SUM(o.order_amount), 2) AS total_revenue_inr,
-    ROUND(AVG(o.order_amount), 2) AS avg_order_value_inr
+    ROUND(SUM(o.order_amount), 2) AS revenue
 FROM orders o
 JOIN customers c ON o.customer_id = c.customer_id
 JOIN products p ON o.product_id = p.product_id
 WHERE o.status = 'completed'
 GROUP BY c.city, p.category
-ORDER BY c.city ASC, total_revenue_inr DESC;
+ORDER BY c.city ASC, revenue DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q3: Scalar subquery for products priced strictly above average price
--- Identifies premium product offerings across categories
+-- Q3: Scalar Subquery
+-- Products priced above the average catalogue price.
+-- Reference: 11 products.
 -- ------------------------------------------------------------------------------
 -- name: q3_scalar_subquery
 SELECT 
@@ -56,8 +56,9 @@ ORDER BY price_inr DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q4: LEFT JOIN for customers without completed orders
--- Identifies registered customers who have never completed an order
+-- Q4: LEFT JOIN
+-- Customers who have no completed order.
+-- Reference: 25 customers.
 -- ------------------------------------------------------------------------------
 -- name: q4_left_join
 SELECT 
@@ -75,34 +76,39 @@ ORDER BY c.customer_id ASC;
 
 
 -- ------------------------------------------------------------------------------
--- Q5: CTE for above-average customer spending
--- Aggregates customer lifetime spending and filters for above-mean spenders
+-- Q5: Common Table Expression (CTE)
+-- One CTE computes each customer's total completed spend and a second computes
+-- the average of those totals; the main query returns customers whose total is above average.
+-- Reference: 550 customers; average INR 2,552.06.
 -- ------------------------------------------------------------------------------
 -- name: q5_cte_above_average_spend
 WITH customer_spending AS (
     SELECT 
-        c.customer_id,
-        c.city,
-        COUNT(o.order_id) AS total_completed_orders,
-        ROUND(SUM(o.order_amount), 2) AS total_spend_inr
-    FROM customers c
-    JOIN orders o ON c.customer_id = o.customer_id
-    WHERE o.status = 'completed'
-    GROUP BY c.customer_id, c.city
+        customer_id,
+        SUM(order_amount) AS total_spend
+    FROM orders
+    WHERE status = 'completed'
+    GROUP BY customer_id
+),
+average_spending AS (
+    SELECT 
+        AVG(total_spend) AS mean_spend
+    FROM customer_spending
 )
 SELECT 
-    customer_id,
-    city,
-    total_completed_orders,
-    total_spend_inr
-FROM customer_spending
-WHERE total_spend_inr > (SELECT AVG(total_spend_inr) FROM customer_spending)
-ORDER BY total_spend_inr DESC;
+    cs.customer_id,
+    ROUND(cs.total_spend, 2) AS total_spend_inr
+FROM customer_spending cs, average_spending av
+WHERE cs.total_spend > av.mean_spend
+ORDER BY cs.total_spend DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q6: RANK, DENSE_RANK and ROW_NUMBER by city
--- Ranks customer lifetime spending within each individual city
+-- Q6: Ranking Window Functions
+-- For each customer with completed spend, compute total spend and then
+-- RANK(), DENSE_RANK() and ROW_NUMBER() using OVER (PARTITION BY city ORDER BY total_spend DESC).
+-- Reference: top per city (Bengaluru C0082, Chennai C0930, Delhi C0291, Hyderabad C0743,
+-- Mumbai C0693, Pune C0426); exactly 8 rows have RANK() != ROW_NUMBER().
 -- ------------------------------------------------------------------------------
 -- name: q6_window_ranking_by_city
 WITH city_customer_spend AS (
@@ -123,27 +129,26 @@ SELECT
     RANK() OVER (PARTITION BY city ORDER BY total_spend_inr DESC) AS rank_val,
     DENSE_RANK() OVER (PARTITION BY city ORDER BY total_spend_inr DESC) AS dense_rank_val
 FROM city_customer_spend
-ORDER BY city ASC, rank_val ASC;
+ORDER BY city ASC, total_spend_inr DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q7: Daily running revenue using a window function
--- Cumulative revenue timeline across chronological order dates
+-- Q7: Running Total Window Function
+-- Daily completed revenue with a cumulative revenue column computed as SUM(revenue) OVER (ORDER BY day).
+-- Reference: 183 daily rows; last cumulative value is INR 2,998,668.80.
 -- ------------------------------------------------------------------------------
 -- name: q7_daily_running_revenue
 WITH daily_revenue AS (
     SELECT 
-        SUBSTR(order_ts, 1, 10) AS order_date,
-        COUNT(order_id) AS daily_orders,
+        SUBSTR(order_ts, 1, 10) AS day,
         ROUND(SUM(order_amount), 2) AS daily_revenue_inr
     FROM orders
     WHERE status = 'completed'
     GROUP BY SUBSTR(order_ts, 1, 10)
 )
 SELECT 
-    order_date,
-    daily_orders,
+    day,
     daily_revenue_inr,
-    ROUND(SUM(daily_revenue_inr) OVER (ORDER BY order_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_total_revenue_inr
+    ROUND(SUM(daily_revenue_inr) OVER (ORDER BY day ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_total_revenue_inr
 FROM daily_revenue
-ORDER BY order_date ASC;
+ORDER BY day ASC;

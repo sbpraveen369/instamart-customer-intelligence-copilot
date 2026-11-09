@@ -1,132 +1,92 @@
-============================================================
-INSTAMART — RAW DATA AUDIT REPORT
-============================================================
+================================================================================
+INSTAMART RAW DATA AUDIT REPORT
+================================================================================
 
-============================================================
-CUSTOMERS AUDIT
-============================================================
-Shape   : (1200, 5)
-Dtypes  :
+1. DATASET OVERVIEW & SHAPES
+  customers.csv : 1,200 rows, 5 columns
+  products.csv  : 40 rows, 4 columns
+  orders.csv    : 13,084 rows, 9 columns
+  tickets.csv   : 164 rows, 5 columns
+
+2. DATA TYPES & MISSING VALUES
+
+[CUSTOMERS DATA TYPES]
 customer_id        str
 city               str
-gender             str
-age            float64
 signup_date        str
+age            float64
+gender             str
 
---- Missing values: customers ---
-  customer_id                   :     0  (0.00%)
-  city                          :     0  (0.00%)
-  gender                        :    11  (0.92%)
-  age                           :     6  (0.50%)
-  signup_date                   :     0  (0.00%)
+--- Column Missing Value Summary: customers ---
+  customer_id              :     0 (  0.00%)
+  city                     :     0 (  0.00%)
+  signup_date              :     0 (  0.00%)
+  age                      :    61 (  5.08%)
+  gender                   :    30 (  2.50%)
 
-Raw city value counts:
-  ' Pune'             : 227
-  'Delhi'             : 210
-  ' Bengaluru'        : 197
-  'Hyderabad'         : 191
-  'Chennai'           : 191
-  'Mumbai'            : 184
+[PRODUCTS DATA TYPES]
+product_id        str
+product_name      str
+category          str
+price_inr       int64
 
-Raw gender value counts:
-  'F'                 : 133
-  'M'                 : 126
-  'FEMALE'            : 124
-  'Female'            : 122
-  'f'                 : 122
-  'm'                 : 121
-  'female'            : 109
-  'MALE'              : 109
-  'male'              : 104
-  'Male'              : 100
-  nan                 : 11
-  'other'             : 10
-  'Other'             : 9
+--- Column Missing Value Summary: products ---
+  product_id               :     0 (  0.00%)
+  product_name             :     0 (  0.00%)
+  category                 :     0 (  0.00%)
+  price_inr                :     0 (  0.00%)
 
-Blank ages         : 0
-Invalid ages (<10 or >100): 28
-NaN ages (blank+invalid)  : 6
-
-============================================================
-PRODUCTS AUDIT
-============================================================
-Shape   : (40, 4)
-Dtypes  :
-product_id          str
-product_name        str
-category            str
-price_inr       float64
-
---- Missing values: products ---
-  product_id                    :     0  (0.00%)
-  product_name                  :     0  (0.00%)
-  category                      :     0  (0.00%)
-  price_inr                     :     0  (0.00%)
-
-Invalid price_inr  : 0
-Negative price_inr : 0
-
-============================================================
-ORDERS AUDIT
-============================================================
-Shape   : (13084, 11)
-Dtypes  :
+[ORDERS DATA TYPES]
 order_id                str
 customer_id             str
 product_id              str
-category                str
 quantity              int64
-price_inr           float64
-discount_pct        float64
-order_amount        float64
-status                  str
 order_ts                str
+status                  str
+discount_pct          int64
+order_amount            str
 delivery_minutes    float64
 
---- Missing values: orders ---
-  order_id                      :     0  (0.00%)
-  customer_id                   :     0  (0.00%)
-  product_id                    :     0  (0.00%)
-  category                      :     0  (0.00%)
-  quantity                      :     0  (0.00%)
-  price_inr                     :     0  (0.00%)
-  discount_pct                  :     0  (0.00%)
-  order_amount                  :   221  (1.69%)
-  status                        :     0  (0.00%)
-  order_ts                      :     0  (0.00%)
-  delivery_minutes              :  1629  (12.45%)
+--- Column Missing Value Summary: orders ---
+  order_id                 :     0 (  0.00%)
+  customer_id              :     0 (  0.00%)
+  product_id               :     0 (  0.00%)
+  quantity                 :     0 (  0.00%)
+  order_ts                 :     0 (  0.00%)
+  status                   :     0 (  0.00%)
+  discount_pct             :     0 (  0.00%)
+  order_amount             :    53 (  0.41%)
+  delivery_minutes         :  2541 ( 19.42%)
 
-Exact duplicate rows      : 541
+[TICKETS DATA TYPES]
+ticket_id        str
+customer_id      str
+order_id         str
+text             str
+true_category    str
 
-Status counts (raw):
-  completed      : 11584
-  cancelled      : 1256
-  pending        : 244
+--- Column Missing Value Summary: tickets ---
+  ticket_id                :     0 (  0.00%)
+  customer_id              :     0 (  0.00%)
+  order_id                 :     0 (  0.00%)
+  text                     :     0 (  0.00%)
+  true_category            :     0 (  0.00%)
 
-Pending order rows        : 244
-Distinct order IDs        : 12309
-Missing order_amount      : 221
-Negative delivery_minutes : 182
-Blank delivery_minutes    : 0
-
-============================================================
-TICKETS AUDIT
-============================================================
-Shape   : (164, 5)
-Dtypes  :
-ticket_id      str
-customer_id    str
-issue_type     str
-status         str
-created_at     str
-
---- Missing values: tickets ---
-  ticket_id                     :     0  (0.00%)
-  customer_id                   :     0  (0.00%)
-  issue_type                    :     0  (0.00%)
-  status                        :     0  (0.00%)
-  created_at                    :     0  (0.00%)
-
-============================================================
-END OF AUDIT REPORT
-============================================================
+================================================================================
+3. MANDATORY AUDIT CHECKPOINTS TABLE
+================================================================================
+Audit Metric                                  | Measured Value  | Reference Target
+--------------------------------------------------------------------------------
+Raw orders rows                               | 13084           | 13,084         
+Exact duplicate rows in orders                | 119             | 119            
+Pending status rows in orders                 | 656             | 656            
+Distinct order_id count in orders             | 12309           | 12,309         
+Non-numeric order_amount entries              | 120             | 120            
+Negative delivery_minutes entries             | 106             | 106            
+Blank delivery_minutes entries                | 2541            | 2,541          
+Blank age entries in customers                | 61              | 61             
+Age values outside 10–100 in customers        | 6               | 6              
+Distinct raw city spellings in customers      | 24              | 24             
+Distinct non-blank raw gender spellings       | 10              | 10             
+Blank gender entries in customers             | 30              | 30             
+================================================================================

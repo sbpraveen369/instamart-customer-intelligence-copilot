@@ -20,7 +20,6 @@ def parse_queries(sql_file_path):
     with open(sql_file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Split queries by name tag
     pattern = r"-- name:\s*(\w+)\s*\n(.*?)(?=(?:-- name:|\Z))"
     matches = re.findall(pattern, content, flags=re.DOTALL)
     queries = {}
@@ -47,13 +46,13 @@ def run_sql_analysis():
     ]
 
     query_labels = {
-        "q1_where_and_having": "Q1: WHERE and HAVING (High-volume completed categories)",
-        "q2_three_table_join": "Q2: Three-Table JOIN (City and Category Revenue Breakdown)",
-        "q3_scalar_subquery": "Q3: Scalar Subquery (Products Priced Above Average)",
+        "q1_where_and_having": "Q1: WHERE then HAVING (Completed orders > 500, customer total > 8000)",
+        "q2_three_table_join": "Q2: Three-Table JOIN (City & Product Category Completed Revenue)",
+        "q3_scalar_subquery": "Q3: Scalar Subquery (Products Priced Above Catalogue Average)",
         "q4_left_join": "Q4: LEFT JOIN (Customers Without Completed Orders)",
-        "q5_cte_above_average_spend": "Q5: CTE (Customers with Above-Average Lifetime Spend)",
-        "q6_window_ranking_by_city": "Q6: Window Functions (RANK, DENSE_RANK, ROW_NUMBER by City)",
-        "q7_daily_running_revenue": "Q7: Window Function (Daily & Running Cumulative Revenue)"
+        "q5_cte_above_average_spend": "Q5: Common Table Expression (Customers with Above-Average Spend)",
+        "q6_window_ranking_by_city": "Q6: Ranking Window Functions (RANK, DENSE_RANK, ROW_NUMBER by City)",
+        "q7_daily_running_revenue": "Q7: Running Total Window Function (Daily & Cumulative Revenue)"
     }
 
     results = {}

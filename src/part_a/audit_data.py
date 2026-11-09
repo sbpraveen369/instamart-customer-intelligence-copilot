@@ -2,12 +2,14 @@
 src/part_a/audit_data.py
 Step 3 — Raw Data Audit
 
-Loads raw CSVs, prints detailed audit statistics, and saves
-outputs/audit_report.txt
+Audits raw datasets from data/raw/:
+- customers.csv, products.csv, orders.csv, tickets.csv
+Reports dataset shapes, dtypes, missing counts/percentages,
+and the reference audit figures required by the assignment brief.
+Outputs formatted audit report to outputs/audit_report.txt.
 """
 
 import os
-import sys
 import pandas as pd
 
 RAW_DIR = "data/raw"
@@ -23,124 +25,83 @@ def load_raw():
     return customers, products, orders, tickets
 
 
-def missing_summary(df, name):
-    lines = [f"\n--- Missing values: {name} ---"]
+def column_missing_summary(df, name):
+    lines = [f"\n--- Column Missing Value Summary: {name} ---"]
     for col in df.columns:
         n = df[col].isna().sum()
-        pct = n / len(df) * 100
-        lines.append(f"  {col:30s}: {n:5d}  ({pct:.2f}%)")
+        pct = (n / len(df)) * 100
+        lines.append(f"  {col:25s}: {n:5d} ({pct:6.2f}%)")
     return "\n".join(lines)
 
 
-def audit_customers(cust):
-    lines = ["\n" + "=" * 60, "CUSTOMERS AUDIT", "=" * 60]
-    lines.append(f"Shape   : {cust.shape}")
-    lines.append(f"Dtypes  :\n{cust.dtypes.to_string()}")
-    lines.append(missing_summary(cust, "customers"))
+def run_audit():
+    customers, products, orders, tickets = load_raw()
 
-    # City counts (raw)
-    lines.append("\nRaw city value counts:")
-    for val, cnt in cust["city"].value_counts(dropna=False).items():
-        lines.append(f"  {repr(val):20s}: {cnt}")
+    # ── Orders Audit Metrics ──────────────────────────────────────────────────
+    raw_orders_rows = len(orders)
+    exact_duplicates = orders.duplicated().sum()
+    pending_rows = (orders["status"] == "pending").sum()
+    distinct_order_ids = orders["order_id"].nunique()
+    oa_num = pd.to_numeric(orders["order_amount"], errors="coerce")
+    non_numeric_order_amounts = oa_num.isna().sum()
+    dm_num = pd.to_numeric(orders["delivery_minutes"], errors="coerce")
+    negative_delivery_minutes = (dm_num < 0).sum()
+    blank_delivery_minutes = orders["delivery_minutes"].isna().sum()
 
-    # Gender counts (raw)
-    lines.append("\nRaw gender value counts:")
-    for val, cnt in cust["gender"].value_counts(dropna=False).items():
-        lines.append(f"  {repr(val):20s}: {cnt}")
+    # ── Customers Audit Metrics ───────────────────────────────────────────────
+    blank_ages = customers["age"].isna().sum()
+    age_num = pd.to_numeric(customers["age"], errors="coerce")
+    outside_range_ages = ((age_num < 10) | (age_num > 100)).sum()
+    distinct_raw_cities = customers["city"].nunique()
+    distinct_nonblank_genders = customers["gender"].dropna().nunique()
+    blank_genders = customers["gender"].isna().sum()
 
-    # Age issues
-    age_num = pd.to_numeric(cust["age"], errors="coerce")
-    blank_age   = cust["age"].astype(str).str.strip().eq("").sum()
-    invalid_age = ((age_num < 10) | (age_num > 100)).sum()
-    lines.append(f"\nBlank ages         : {blank_age}")
-    lines.append(f"Invalid ages (<10 or >100): {invalid_age}")
-    lines.append(f"NaN ages (blank+invalid)  : {age_num.isna().sum()}")
+    # ── Build Output Report ───────────────────────────────────────────────────
+    lines = []
+    lines.append("=" * 80)
+    lines.append("INSTAMART RAW DATA AUDIT REPORT")
+    lines.append("=" * 80)
 
-    return "\n".join(lines)
+    lines.append("\n1. DATASET OVERVIEW & SHAPES")
+    lines.append(f"  customers.csv : {customers.shape[0]:,} rows, {customers.shape[1]} columns")
+    lines.append(f"  products.csv  : {products.shape[0]:,} rows, {products.shape[1]} columns")
+    lines.append(f"  orders.csv    : {orders.shape[0]:,} rows, {orders.shape[1]} columns")
+    lines.append(f"  tickets.csv   : {tickets.shape[0]:,} rows, {tickets.shape[1]} columns")
 
+    lines.append("\n2. DATA TYPES & MISSING VALUES")
+    for df, name in [(customers, "customers"), (products, "products"),
+                     (orders, "orders"), (tickets, "tickets")]:
+        lines.append(f"\n[{name.upper()} DATA TYPES]")
+        lines.append(df.dtypes.to_string())
+        lines.append(column_missing_summary(df, name))
 
-def audit_products(prod):
-    lines = ["\n" + "=" * 60, "PRODUCTS AUDIT", "=" * 60]
-    lines.append(f"Shape   : {prod.shape}")
-    lines.append(f"Dtypes  :\n{prod.dtypes.to_string()}")
-    lines.append(missing_summary(prod, "products"))
-    # Validate price_inr
-    p = pd.to_numeric(prod["price_inr"], errors="coerce")
-    lines.append(f"\nInvalid price_inr  : {p.isna().sum()}")
-    lines.append(f"Negative price_inr : {(p < 0).sum()}")
-    return "\n".join(lines)
+    lines.append("\n" + "=" * 80)
+    lines.append("3. MANDATORY AUDIT CHECKPOINTS TABLE")
+    lines.append("=" * 80)
+    lines.append(f"{'Audit Metric':<45} | {'Measured Value':<15} | {'Reference Target':<15}")
+    lines.append("-" * 80)
+    lines.append(f"{'Raw orders rows':<45} | {raw_orders_rows:<15} | {'13,084':<15}")
+    lines.append(f"{'Exact duplicate rows in orders':<45} | {exact_duplicates:<15} | {'119':<15}")
+    lines.append(f"{'Pending status rows in orders':<45} | {pending_rows:<15} | {'656':<15}")
+    lines.append(f"{'Distinct order_id count in orders':<45} | {distinct_order_ids:<15} | {'12,309':<15}")
+    lines.append(f"{'Non-numeric order_amount entries':<45} | {non_numeric_order_amounts:<15} | {'120':<15}")
+    lines.append(f"{'Negative delivery_minutes entries':<45} | {negative_delivery_minutes:<15} | {'106':<15}")
+    lines.append(f"{'Blank delivery_minutes entries':<45} | {blank_delivery_minutes:<15} | {'2,541':<15}")
+    lines.append(f"{'Blank age entries in customers':<45} | {blank_ages:<15} | {'61':<15}")
+    lines.append(f"{'Age values outside 10–100 in customers':<45} | {outside_range_ages:<15} | {'6':<15}")
+    lines.append(f"{'Distinct raw city spellings in customers':<45} | {distinct_raw_cities:<15} | {'24':<15}")
+    lines.append(f"{'Distinct non-blank raw gender spellings':<45} | {distinct_nonblank_genders:<15} | {'10':<15}")
+    lines.append(f"{'Blank gender entries in customers':<45} | {blank_genders:<15} | {'30':<15}")
+    lines.append("=" * 80)
 
+    report_content = "\n".join(lines)
+    print(report_content)
 
-def audit_orders(orders):
-    lines = ["\n" + "=" * 60, "ORDERS AUDIT", "=" * 60]
-    lines.append(f"Shape   : {orders.shape}")
-    lines.append(f"Dtypes  :\n{orders.dtypes.to_string()}")
-    lines.append(missing_summary(orders, "orders"))
-
-    # Exact duplicates
-    exact_dups = orders.duplicated().sum()
-    lines.append(f"\nExact duplicate rows      : {exact_dups}")
-
-    # Status breakdown
-    lines.append("\nStatus counts (raw):")
-    for s, c in orders["status"].value_counts(dropna=False).items():
-        lines.append(f"  {s:15s}: {c}")
-
-    # Pending rows
-    pending = (orders["status"] == "pending").sum()
-    lines.append(f"\nPending order rows        : {pending}")
-
-    # Distinct order IDs
-    distinct_oids = orders["order_id"].nunique()
-    lines.append(f"Distinct order IDs        : {distinct_oids}")
-
-    # Missing order_amount
-    oa = pd.to_numeric(orders["order_amount"], errors="coerce")
-    missing_amt = oa.isna().sum()
-    lines.append(f"Missing order_amount      : {missing_amt}")
-
-    # Negative / blank delivery_minutes
-    dm = pd.to_numeric(orders["delivery_minutes"], errors="coerce")
-    neg_deliv   = (dm < 0).sum()
-    blank_deliv = orders["delivery_minutes"].astype(str).str.strip().eq("").sum()
-    lines.append(f"Negative delivery_minutes : {neg_deliv}")
-    lines.append(f"Blank delivery_minutes    : {blank_deliv}")
-
-    return "\n".join(lines)
-
-
-def audit_tickets(tickets):
-    lines = ["\n" + "=" * 60, "TICKETS AUDIT", "=" * 60]
-    lines.append(f"Shape   : {tickets.shape}")
-    lines.append(f"Dtypes  :\n{tickets.dtypes.to_string()}")
-    lines.append(missing_summary(tickets, "tickets"))
-    return "\n".join(lines)
-
-
-def main():
-    cust, prod, orders, tickets = load_raw()
-
-    report_parts = [
-        "=" * 60,
-        "INSTAMART — RAW DATA AUDIT REPORT",
-        "=" * 60,
-        audit_customers(cust),
-        audit_products(prod),
-        audit_orders(orders),
-        audit_tickets(tickets),
-        "\n" + "=" * 60,
-        "END OF AUDIT REPORT",
-        "=" * 60,
-    ]
-
-    report = "\n".join(report_parts)
-    print(report)
-
-    out_path = f"{OUT_DIR}/audit_report.txt"
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(report)
-    print(f"\nAudit report saved to: {out_path}")
+    out_file = f"{OUT_DIR}/audit_report.txt"
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write(report_content)
+    print(f"\nAudit report successfully saved to: {out_file}")
 
 
 if __name__ == "__main__":
-    main()
+    run_audit()

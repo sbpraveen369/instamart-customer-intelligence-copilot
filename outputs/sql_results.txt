@@ -6,88 +6,93 @@ Queries executed: 7
 
 
 ================================================================================
-Q1: WHERE and HAVING (High-volume completed categories)
+Q1: WHERE then HAVING (Completed orders > 500, customer total > 8000)
 ================================================================================
 SQL Query:
 SELECT 
-    category,
-    COUNT(order_id) AS completed_orders,
-    ROUND(SUM(order_amount), 2) AS total_revenue_inr,
-    ROUND(AVG(order_amount), 2) AS avg_order_value_inr
+    customer_id,
+    ROUND(SUM(order_amount), 2) AS total_amount
 FROM orders
-WHERE status = 'completed'
-GROUP BY category
-HAVING COUNT(order_id) > 1000
-ORDER BY total_revenue_inr DESC;
+WHERE status = 'completed' AND order_amount > 500
+GROUP BY customer_id
+HAVING SUM(order_amount) > 8000
+ORDER BY total_amount DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q2: Three-table JOIN for city and product-category revenue
--- Combines customers, orders, and products to evaluate cross-segment revenue
+-- Q2: Three-Table JOIN
+-- Revenue by city and product category (join orders, customers, products).
+-- Reference: 30 rows; revenues sum to INR 2,998,668.80; largest cell is Bengaluru / Electronics at INR 233,909.45.
 -- ------------------------------------------------------------------------------
 
-Row count returned: 10
+Row count returned: 30
 Output:
-     category  completed_orders  total_revenue_inr  avg_order_value_inr
- Pet Supplies              1101          385295.52               349.95
-Personal Care              1136          383892.89               337.93
-        Dairy              1154          329611.79               285.63
-    Household              1134          313741.93               276.67
-    Groceries              1118          307194.72               274.77
-       Frozen              1088          290184.63               266.71
-       Snacks              1133          262733.00               231.89
-    Beverages              1076          252832.54               234.97
-         Baby              1092          244791.13               224.17
-       Health              1078          228390.65               211.87
+customer_id  total_amount
+      C0693      13776.55
+      C0082      12317.70
+      C0743      12266.85
+      C0525      12241.30
+      C0291      12150.70
+      C0267      12150.25
+      C0488      11825.50
+      C0699      11693.90
+      C0512      11617.65
+      C0332      10779.50
+... [15 rows omitted] ...
+customer_id  total_amount
+      C0942       8643.60
+      C1000       8462.20
+      C0916       8395.35
+      C0454       8299.15
+      C0424       8294.20
 
 
 ================================================================================
-Q2: Three-Table JOIN (City and Category Revenue Breakdown)
+Q2: Three-Table JOIN (City & Product Category Completed Revenue)
 ================================================================================
 SQL Query:
 SELECT 
     c.city,
     p.category,
-    COUNT(o.order_id) AS total_orders,
-    ROUND(SUM(o.order_amount), 2) AS total_revenue_inr,
-    ROUND(AVG(o.order_amount), 2) AS avg_order_value_inr
+    ROUND(SUM(o.order_amount), 2) AS revenue
 FROM orders o
 JOIN customers c ON o.customer_id = c.customer_id
 JOIN products p ON o.product_id = p.product_id
 WHERE o.status = 'completed'
 GROUP BY c.city, p.category
-ORDER BY c.city ASC, total_revenue_inr DESC;
+ORDER BY c.city ASC, revenue DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q3: Scalar subquery for products priced strictly above average price
--- Identifies premium product offerings across categories
+-- Q3: Scalar Subquery
+-- Products priced above the average catalogue price.
+-- Reference: 11 products.
 -- ------------------------------------------------------------------------------
 
-Row count returned: 60
+Row count returned: 30
 Output:
-     city      category  total_orders  total_revenue_inr  avg_order_value_inr
-Bengaluru  Pet Supplies           184           65405.12               355.46
-Bengaluru Personal Care           194           62044.78               319.82
-Bengaluru         Dairy           203           54858.69               270.24
-Bengaluru     Groceries           170           49612.84               291.84
-Bengaluru        Frozen           176           46442.58               263.88
-Bengaluru     Household           176           44994.88               255.65
-Bengaluru     Beverages           190           44482.24               234.12
-Bengaluru        Health           204           43792.74               214.67
-Bengaluru        Snacks           173           41841.87               241.86
-Bengaluru          Baby           179           39081.17               218.33
-... [45 rows omitted] ...
-city  category  total_orders  total_revenue_inr  avg_order_value_inr
-Pune    Frozen           206           55065.19               267.31
-Pune    Snacks           216           49288.65               228.19
-Pune      Baby           201           45338.94               225.57
-Pune    Health           190           40228.88               211.73
-Pune Beverages           153           35461.72               231.78
+     city      category   revenue
+Bengaluru   Electronics 233909.45
+Bengaluru       Grocery 110915.65
+Bengaluru         Dairy  87075.05
+Bengaluru        Snacks  71549.40
+Bengaluru Personal Care  20193.85
+  Chennai   Electronics 195508.80
+  Chennai       Grocery  93817.45
+  Chennai         Dairy  78301.80
+  Chennai        Snacks  68325.70
+  Chennai Personal Care  27675.40
+... [15 rows omitted] ...
+city      category   revenue
+Pune   Electronics 187629.25
+Pune       Grocery 108456.60
+Pune         Dairy  90349.55
+Pune        Snacks  80207.50
+Pune Personal Care  34275.15
 
 
 ================================================================================
-Q3: Scalar Subquery (Products Priced Above Average)
+Q3: Scalar Subquery (Products Priced Above Catalogue Average)
 ================================================================================
 SQL Query:
 SELECT 
@@ -101,30 +106,25 @@ ORDER BY price_inr DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q4: LEFT JOIN for customers without completed orders
--- Identifies registered customers who have never completed an order
+-- Q4: LEFT JOIN
+-- Customers who have no completed order.
+-- Reference: 25 customers.
 -- ------------------------------------------------------------------------------
 
-Row count returned: 18
+Row count returned: 11
 Output:
-product_id product_name      category  price_inr
-      P019   Product_19  Pet Supplies     186.99
-      P029   Product_29  Pet Supplies     170.41
-      P015   Product_15 Personal Care     168.44
-      P032   Product_32         Dairy     165.32
-      P016   Product_16     Household     165.05
-      P012   Product_12         Dairy     159.07
-      P039   Product_39  Pet Supplies     155.57
-      P036   Product_36     Household     153.71
-      P025   Product_25 Personal Care     153.63
-      P023   Product_23     Beverages     151.62
-... [3 rows omitted] ...
-product_id product_name      category  price_inr
-      P017   Product_17        Frozen     132.60
-      P027   Product_27        Frozen     132.20
-      P005    Product_5 Personal Care     124.08
-      P040   Product_40        Health     119.16
-      P038   Product_38          Baby     118.73
+product_id        product_name      category  price_inr
+      P038   Bluetooth Speaker   Electronics     1999.0
+      P033    Wireless Earbuds   Electronics     1499.0
+      P034 Power Bank 10000mAh   Electronics     1299.0
+      P036   Phone Charger 20W   Electronics      799.0
+      P037          Smart Bulb   Electronics      599.0
+      P040    Memory Card 64GB   Electronics      549.0
+      P032       Sunscreen 50g Personal Care      399.0
+      P030   Body Lotion 400ml Personal Care      350.0
+      P039         Phone Stand   Electronics      349.0
+      P014          Ghee 500ml         Dairy      340.0
+      P035      USB-C Cable 1m   Electronics      299.0
 
 
 ================================================================================
@@ -146,71 +146,91 @@ ORDER BY c.customer_id ASC;
 
 
 -- ------------------------------------------------------------------------------
--- Q5: CTE for above-average customer spending
--- Aggregates customer lifetime spending and filters for above-mean spenders
+-- Q5: Common Table Expression (CTE)
+-- One CTE computes each customer's total completed spend and a second computes
+-- the average of those totals; the main query returns customers whose total is above average.
+-- Reference: 550 customers; average INR 2,552.06.
 -- ------------------------------------------------------------------------------
 
-Row count returned: 0
+Row count returned: 25
 Output:
-Empty DataFrame
-Columns: [customer_id, city, gender, age, signup_date]
-Index: []
+customer_id      city  gender  age signup_date
+      C0029 Hyderabad    male   21  2024-03-21
+      C0037      Pune  female   18  2024-01-23
+      C0093      Pune unknown   54  2025-03-16
+      C0115 Bengaluru  female   42  2024-04-11
+      C0120 Bengaluru  female   52  2024-03-08
+      C0151      Pune    male   53  2024-09-13
+      C0354   Chennai    male   32  2024-01-13
+      C0363   Chennai    male   53  2024-10-11
+      C0412     Delhi  female   32  2024-01-05
+      C0461 Bengaluru  female   25  2024-12-29
+... [10 rows omitted] ...
+customer_id      city gender  age signup_date
+      C1052     Delhi female   35  2024-03-04
+      C1083      Pune   male   36  2024-09-14
+      C1111      Pune   male   58  2024-03-07
+      C1165 Bengaluru female   59  2024-08-14
+      C1189 Bengaluru female   47  2024-06-28
 
 
 ================================================================================
-Q5: CTE (Customers with Above-Average Lifetime Spend)
+Q5: Common Table Expression (Customers with Above-Average Spend)
 ================================================================================
 SQL Query:
 WITH customer_spending AS (
     SELECT 
-        c.customer_id,
-        c.city,
-        COUNT(o.order_id) AS total_completed_orders,
-        ROUND(SUM(o.order_amount), 2) AS total_spend_inr
-    FROM customers c
-    JOIN orders o ON c.customer_id = o.customer_id
-    WHERE o.status = 'completed'
-    GROUP BY c.customer_id, c.city
+        customer_id,
+        SUM(order_amount) AS total_spend
+    FROM orders
+    WHERE status = 'completed'
+    GROUP BY customer_id
+),
+average_spending AS (
+    SELECT 
+        AVG(total_spend) AS mean_spend
+    FROM customer_spending
 )
 SELECT 
-    customer_id,
-    city,
-    total_completed_orders,
-    total_spend_inr
-FROM customer_spending
-WHERE total_spend_inr > (SELECT AVG(total_spend_inr) FROM customer_spending)
-ORDER BY total_spend_inr DESC;
+    cs.customer_id,
+    ROUND(cs.total_spend, 2) AS total_spend_inr
+FROM customer_spending cs, average_spending av
+WHERE cs.total_spend > av.mean_spend
+ORDER BY cs.total_spend DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q6: RANK, DENSE_RANK and ROW_NUMBER by city
--- Ranks customer lifetime spending within each individual city
+-- Q6: Ranking Window Functions
+-- For each customer with completed spend, compute total spend and then
+-- RANK(), DENSE_RANK() and ROW_NUMBER() using OVER (PARTITION BY city ORDER BY total_spend DESC).
+-- Reference: top per city (Bengaluru C0082, Chennai C0930, Delhi C0291, Hyderabad C0743,
+-- Mumbai C0693, Pune C0426); exactly 8 rows have RANK() != ROW_NUMBER().
 -- ------------------------------------------------------------------------------
 
-Row count returned: 565
+Row count returned: 550
 Output:
-customer_id      city  total_completed_orders  total_spend_inr
-      C0016   Chennai                      20          7085.82
-      C1070    Mumbai                      16          5709.82
-      C0359    Mumbai                      16          5670.12
-      C0386   Chennai                      16          5479.32
-      C0476 Hyderabad                      16          5469.35
-      C0402 Bengaluru                      18          5326.74
-      C0968      Pune                      16          5274.44
-      C0929    Mumbai                      14          4977.87
-      C0902      Pune                      17          4964.59
-      C0983 Hyderabad                      17          4951.93
-... [550 rows omitted] ...
-customer_id      city  total_completed_orders  total_spend_inr
-      C1071    Mumbai                       9          2504.26
-      C0101 Hyderabad                       7          2503.86
-      C0570    Mumbai                      12          2503.68
-      C0989      Pune                       9          2502.38
-      C0640 Hyderabad                       9          2500.75
+customer_id  total_spend_inr
+      C0693         14766.55
+      C0291         13742.60
+      C0488         13187.50
+      C0082         12856.20
+      C0743         12730.05
+      C0525         12719.70
+      C0699         12471.80
+      C0267         12210.25
+      C0332         11806.40
+      C0512         11617.65
+... [535 rows omitted] ...
+customer_id  total_spend_inr
+      C0739          2570.30
+      C0272          2569.90
+      C0232          2569.60
+      C0987          2567.95
+      C0746          2566.20
 
 
 ================================================================================
-Q6: Window Functions (RANK, DENSE_RANK, ROW_NUMBER by City)
+Q6: Ranking Window Functions (RANK, DENSE_RANK, ROW_NUMBER by City)
 ================================================================================
 SQL Query:
 WITH city_customer_spend AS (
@@ -231,74 +251,73 @@ SELECT
     RANK() OVER (PARTITION BY city ORDER BY total_spend_inr DESC) AS rank_val,
     DENSE_RANK() OVER (PARTITION BY city ORDER BY total_spend_inr DESC) AS dense_rank_val
 FROM city_customer_spend
-ORDER BY city ASC, rank_val ASC;
+ORDER BY city ASC, total_spend_inr DESC;
 
 
 -- ------------------------------------------------------------------------------
--- Q7: Daily running revenue using a window function
--- Cumulative revenue timeline across chronological order dates
+-- Q7: Running Total Window Function
+-- Daily completed revenue with a cumulative revenue column computed as SUM(revenue) OVER (ORDER BY day).
+-- Reference: 183 daily rows; last cumulative value is INR 2,998,668.80.
 -- ------------------------------------------------------------------------------
 
-Row count returned: 1200
+Row count returned: 1175
 Output:
      city customer_id  total_spend_inr  row_num  rank_val  dense_rank_val
-Bengaluru       C0402          5326.74        1         1               1
-Bengaluru       C0310          4951.01        2         2               2
-Bengaluru       C0597          4854.87        3         3               3
-Bengaluru       C0163          4751.67        4         4               4
-Bengaluru       C0785          4694.70        5         5               5
-Bengaluru       C0710          4585.01        6         6               6
-Bengaluru       C0977          4490.87        7         7               7
-Bengaluru       C1120          4399.57        8         8               8
-Bengaluru       C0311          4294.74        9         9               9
-Bengaluru       C0456          4211.80       10        10              10
-... [1185 rows omitted] ...
+Bengaluru       C0082         12856.20        1         1               1
+Bengaluru       C0525         12719.70        2         2               2
+Bengaluru       C0699         12471.80        3         3               3
+Bengaluru       C0543         11195.10        4         4               4
+Bengaluru       C1147         10156.90        5         5               5
+Bengaluru       C0407          9945.85        6         6               6
+Bengaluru       C0942          8643.60        7         7               7
+Bengaluru       C1126          8595.70        8         8               8
+Bengaluru       C0916          8444.85        9         9               9
+Bengaluru       C0098          8151.20       10        10              10
+... [1160 rows omitted] ...
 city customer_id  total_spend_inr  row_num  rank_val  dense_rank_val
-Pune       C0956           782.19      223       223             223
-Pune       C0424           757.30      224       224             224
-Pune       C0951           720.36      225       225             225
-Pune       C0478           711.80      226       226             226
-Pune       C1030           539.25      227       227             227
+Pune       C0735            39.25      217       217             213
+Pune       C0541            38.25      218       218             214
+Pune       C1061            34.80      219       219             215
+Pune       C1158            33.60      220       220             216
+Pune       C0861            29.00      221       221             217
 
 
 ================================================================================
-Q7: Window Function (Daily & Running Cumulative Revenue)
+Q7: Running Total Window Function (Daily & Cumulative Revenue)
 ================================================================================
 SQL Query:
 WITH daily_revenue AS (
     SELECT 
-        SUBSTR(order_ts, 1, 10) AS order_date,
-        COUNT(order_id) AS daily_orders,
+        SUBSTR(order_ts, 1, 10) AS day,
         ROUND(SUM(order_amount), 2) AS daily_revenue_inr
     FROM orders
     WHERE status = 'completed'
     GROUP BY SUBSTR(order_ts, 1, 10)
 )
 SELECT 
-    order_date,
-    daily_orders,
+    day,
     daily_revenue_inr,
-    ROUND(SUM(daily_revenue_inr) OVER (ORDER BY order_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_total_revenue_inr
+    ROUND(SUM(daily_revenue_inr) OVER (ORDER BY day ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_total_revenue_inr
 FROM daily_revenue
-ORDER BY order_date ASC;
+ORDER BY day ASC;
 
-Row count returned: 731
+Row count returned: 183
 Output:
-order_date  daily_orders  daily_revenue_inr  running_total_revenue_inr
-2023-01-01            14            4358.72                    4358.72
-2023-01-02            15            3916.79                    8275.51
-2023-01-03            14            3835.57                   12111.08
-2023-01-04            16            4369.72                   16480.80
-2023-01-05            20            4918.83                   21399.63
-2023-01-06            22            5989.74                   27389.37
-2023-01-07            16            4387.95                   31777.32
-2023-01-08            17            4529.34                   36306.66
-2023-01-09            14            2503.49                   38810.15
-2023-01-10            11            3248.78                   42058.93
-... [716 rows omitted] ...
-order_date  daily_orders  daily_revenue_inr  running_total_revenue_inr
-2024-12-27             7            1333.10                 2987088.65
-2024-12-28            11            2929.35                 2990018.00
-2024-12-29            15            3258.59                 2993276.59
-2024-12-30             8            1630.02                 2994906.61
-2024-12-31            12            3762.19                 2998668.80
+       day  daily_revenue_inr  running_total_revenue_inr
+2025-04-01           16876.50                   16876.50
+2025-04-02           19854.55                   36731.05
+2025-04-03           28048.35                   64779.40
+2025-04-04           14249.60                   79029.00
+2025-04-05           16031.50                   95060.50
+2025-04-06           26323.80                  121384.30
+2025-04-07           15606.90                  136991.20
+2025-04-08           17055.45                  154046.65
+2025-04-09           20403.35                  174450.00
+2025-04-10           15359.90                  189809.90
+... [168 rows omitted] ...
+       day  daily_revenue_inr  running_total_revenue_inr
+2025-09-26           17190.85                 2942763.75
+2025-09-27           13689.95                 2956453.70
+2025-09-28           12689.85                 2969143.55
+2025-09-29           14022.15                 2983165.70
+2025-09-30           15503.10                 2998668.80
